@@ -143,6 +143,7 @@ function addPostBtnClicked() {
             showAlert("You are add post successfully", "success");
 
             getPosts();
+            getUserPosts();
         })
         .catch((error) => {
             console.log(error.response.data);
@@ -255,7 +256,7 @@ function getPosts(reload =true, page = 1) {
                 <div id="${post.id}"
                     class="block mb-6 rounded-lg bg-white shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] dark:bg-primary-700">
                     <div class="flex items-center justify-between border-b-2 px-6 py-3">
-                        <div class="flex gap-1 dark:border-primary-600 dark:text-primary-50">
+                        <div class="flex gap-1 dark:border-primary-600 dark:text-primary-50 cursor-pointer" onclick="userClicked(${post.author.id})" >
                             <img src="${post.author.profile_image}"
                                 class="w-6 rounded-full"
                                 alt="" />
@@ -337,6 +338,7 @@ function setupUI() {
     const postAddBTN = document.getElementById("add-post-btn");
     const profileImage = document.querySelector("#profile_login img");
     const profileName = document.querySelector("#profile_login span");
+    const profile = document.getElementById("profile_link");
     
     if (token === null) {
         logout.style.display = "none";
@@ -344,9 +346,11 @@ function setupUI() {
         postAddBTN.style.display = "none";
         login.style.display = "";
         singup.style.display = "";
+        profile.style.display = "none";
     } else {
         login.style.display = "none";
         singup.style.display = "none";
+        profile.style.display = "";
         postAddBTN.style.display = "";
         profile_login.style.display = "";
         logout.style.display = "";
@@ -379,14 +383,14 @@ function getCurentUser() {
     return user;
 }
 
-function getPostId() {
+function getId() {
     const urlParams = new URLSearchParams(window.location.search);
-    const postId = urlParams.get("id");
-    return postId;
+    const userId = urlParams.get("id");
+    return userId;
 }
 
 function getPost() {
-    axios.get(`${baseUrl}/posts/${getPostId()}`)
+    axios.get(`${baseUrl}/posts/${getId()}`)
     .then((response) => {
         const post = response.data.data;
         const comments = post.comments;
@@ -491,6 +495,133 @@ function getPost() {
 
 }
 
+getUser();
+function getUser(){
+    const id = getId();
+    axios.get(`${baseUrl}/users/${id}`)
+    .then((response) => {
+        const user = response.data.data;
+        console.log(document.getElementById("user"));
+        document.getElementById("name").innerHTML = user.name;
+        document.getElementById("user_name").innerHTML = `@${user.username}`;
+        document.getElementById("user_email").innerHTML = user.email;
+        document.getElementById("user_img").src = user.profile_image;
+
+        // posts & comments
+        document.getElementById("posts_count").innerHTML = user.posts_count;
+        document.getElementById("comments_count").innerHTML = user.comments_count;
+        document.getElementById("posts_author").innerHTML = user.username;
+    });
+
+}
+
+getUserPosts()
+function getUserPosts() {
+    const id =getId();
+    axios.get(`${baseUrl}/users/${id}/posts`)
+    .then((response) => {
+        const posts = response.data.data;
+        console.log(posts);
+
+        document.getElementById("user_posts").innerHTML = "";
+        posts.forEach(post => {
+
+            let postTitle = "";
+            if (post.title != null) {
+                postTitle = post.title;
+            }
+            const author = post.author;
+            let user = getCurentUser();
+            let isMyPost = user != null && user.id === author.id ? true : false;
+            let buttonContent = "";
+            if (isMyPost) {
+                buttonContent = `
+                <button 
+                            data-te-toggle="modal"
+                            data-te-target="#editPostModalVarying"
+                            data-te-whatever="@mdo"
+                            onclick="editPostBtnClickd('${encodeURIComponent(JSON.stringify(post))}')" class="inline-flex items-center p-2 text-sm font-medium text-center text-gray-900 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none dark:text-white focus:ring-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-600" type="button">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 fill-primary-600" viewBox="0 0 512 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2023 Fonticons, Inc.-->
+                            <path d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1 377.9 88 407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9 390.1 168 255.8 302.2c-2.9 2.9-6.5 5-10.4 6.1l-58.5 16.7 16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25C446.8-3.1 401.2-3.1 373.1 25zM88 64C39.4 64 0 103.4 0 152V424c0 48.6 39.4 88 88 88H360c48.6 0 88-39.4 88-88V312c0-13.3-10.7-24-24-24s-24 10.7-24 24V424c0 22.1-17.9 40-40 40H88c-22.1 0-40-17.9-40-40V152c0-22.1 17.9-40 40-40H200c13.3 0 24-10.7 24-24s-10.7-24-24-24H88z"/>
+                            </svg> 
+                            
+                </button>
+                <button 
+                            data-te-toggle="modal"
+                            data-te-target="#deletePostModalVarying"
+                            data-te-whatever="@mdo"
+                            onclick="deletPostBtnClickd('${encodeURIComponent(JSON.stringify(post))}')" class="inline-flex items-center p-2 text-sm font-medium text-center text-gray-900 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none dark:text-white focus:ring-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-600" type="button">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 fill-danger-600" viewBox="0 0 448 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2023 Fonticons, Inc.-->
+                            <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/>
+                            </svg>
+                </button>
+                `
+            }
+            console.log(postTitle);
+            
+
+            let content = `
+                <div id="${post.id}"
+                    class="block mb-6 rounded-lg bg-white shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] dark:bg-primary-700">
+                    <div class="flex items-center justify-between border-b-2 px-6 py-3">
+                        <div class="flex gap-1 dark:border-primary-600 dark:text-primary-50 cursor-pointer" onclick="userClicked(${post.author.id})" >
+                            <img src="${post.author.profile_image}"
+                                class="w-6 rounded-full"
+                                alt="" />
+                            <span class="text-primary-700 font-bold">@${post.author.username}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${buttonContent}
+                        </div>
+                    </div>
+                    <div class = "post_body cursor-pointer" onclick="window.location.href = 'post.html?id=${post.id}'">
+                        <div class=" relative p-6 pb-0 overflow-hidden bg-cover bg-no-repeat">
+                            <img class="rounded-lg w-full"
+                                src=${post.image}
+                                alt="" />
+                            <p class="text-base text-primary-600 dark:text-primary-200">
+                                <small class="text-primary-500 dark:text-primary-400">${post.created_at}</small>
+                            </p>
+                        </div>
+                        <div class="px-6 ">
+                            <h5 class="mb-2 text-xl font-medium leading-tight text-primary-800 dark:text-primary-50">
+                                ${post.title}
+                            </h5>
+                            <p class="mb-4 text-base text-primary-700 dark:text-primary-200">
+                                ${post.body}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="border-t-2 flex items-center gap-2 flex-wrap px-6 py-3 text-primary-700 ">
+                        <div class="cursor-pointer">
+                            <i class="fa-regular fa-comment"></i>
+                            <span>
+                                ${post.comments_count} comments
+                            </span>
+                        </div>
+                        <div id="post_tags_${post.id}" class="flex gap-2 flex-wrap">
+
+                        </div>
+                    </div>
+                </div>
+            `;
+            const tags = post.tags;
+            document.getElementById("user_posts").innerHTML += content;
+            const currentPostTagsId = `post_tags_${post.id}`;
+            document.getElementById(currentPostTagsId).innerHTML = "";
+
+            for (const tag of tags) {
+                document.getElementById(currentPostTagsId).innerHTML += `
+                    <button id=""
+                        type="button"
+                        class="inline-block rounded-full bg-primary-100 px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-primary-700 transition duration-150 ease-in-out hover:bg-primary-accent-100 focus:bg-primary-accent-100 focus:outline-none focus:ring-0 active:bg-primary-accent-200">
+                        ${tag.name}
+                    </button>
+                `;
+            }
+        });
+    });         
+}
 
 function addComment() {
     
@@ -498,7 +629,7 @@ function addComment() {
     
         const token = localStorage.getItem("token");
     const comment = document.getElementById("add_comment").value;
-    const postId = getPostId();
+    const postId = getId();
     const params = {
         "body": comment,
         "post_id": postId
@@ -520,8 +651,7 @@ function addComment() {
             // alert
             showAlert(error.response.data.message, "danger");
         });                     
-    }
-
+}
 function editPostBtnClickd(postObj) {
     let post = JSON.parse(decodeURIComponent(postObj));
     console.log(post);
@@ -529,7 +659,7 @@ function editPostBtnClickd(postObj) {
     document.getElementById("edit_post_id").value = post.id;
     document.getElementById("edit_post_title").value = post.title;
     document.getElementById("edit_post_description").value = post.body;
-    document.getElementById("edit_post_image").value = post.image;
+    document.getElementById("edit_post_image").src = post.image;
 }
 function deletPostBtnClickd(postObj) {
     let post = JSON.parse(decodeURIComponent(postObj));
@@ -560,6 +690,7 @@ function confermDeletePostBtnClicked() {
             showAlert("You are delete post successfully", "success");
 
             getPosts();
+            getUserPosts()
             console.log("After showAlert");
         })
         .catch((error) => {
@@ -571,4 +702,11 @@ function confermDeletePostBtnClicked() {
         });
     console.log(userName);
     console.log("loginBtnClicked function ended");
+}
+function userClicked(userId) {
+    window.location.href = `/public/profile.html?id=${userId}`;
+}
+
+function profileClicked() {
+    window.location.href = `/public/profile.html?id=${getCurentUser().id}`;
 }
